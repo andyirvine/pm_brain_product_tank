@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="page-title"><i class="bi bi-journal-text" style="color:var(--primary);margin-right:8px;"></i>Reports</div>
+    <div class="page-subtitle">Saved outputs from Query Brain</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <a href="/export/pptx"
+       style="font-size:12px;font-weight:500;color:#fff;background:var(--primary);text-decoration:none;display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;">
+      <i class="bi bi-file-earmark-ppt-fill"></i> Export to PPTX
+    </a>
+    <a href="/query" style="font-size:12px;font-weight:500;color:var(--primary);text-decoration:none;display:flex;align-items:center;gap:5px;">
+      <i class="bi bi-chat-dots-fill"></i> Query Brain
+    </a>
+  </div>
+</div>
+
+<div class="page-body">
+  {% if reports %}
+  <div class="reports-grid">
+    {% for r in reports %}
+    <a href="/reports/{{ r.filename }}" class="report-card">
+      <div class="report-icon"><i class="bi bi-file-earmark-text"></i></div>
+      <div class="report-info">
+        <div class="report-title">{{ r.title }}</div>
+        {% if r.date %}<div class="report-date"><i class="bi bi-clock"></i> {{ r.date }}</div>{% endif %}
+      </div>
+      <i class="bi bi-chevron-right report-arrow"></i>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:80px 20px;">
+    <i class="bi bi-journal-x"></i>
+    <h3>No reports yet</h3>
+    <p>Run a query and click <strong>Save as Report</strong> to save it here.</p>
+    <a href="/query" style="display:inline-flex;align-items:center;gap:6px;margin-top:14px;padding:9px 18px;background:var(--primary);color:#fff;border-radius:8px;text-decoration:none;font-size:13px;font-weight:500;">
+      <i class="bi bi-chat-dots-fill"></i> Go to Query Brain
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

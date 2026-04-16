@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- ── Tab bar ─────────────────────────────────────────────────────────────── -->
+<div class="doc-tabs">
+  {% for key, doc in docs.items() %}
+  <a href="/data?tab={{ key }}"
+     class="doc-tab {{ 'active' if active_tab == key else '' }}">
+    <i class="bi bi-{{ doc.icon }}"></i>
+    {{ doc.title }}
+  </a>
+  {% endfor %}
+</div>
+
+<!-- ── Doc meta header ─────────────────────────────────────────────────────── -->
+<div class="page-header">
+  <div>
+    <div class="page-title">
+      <i class="bi bi-{{ doc_meta.icon }}" style="color:var(--primary);margin-right:8px;"></i>
+      {{ doc_meta.title }}
+    </div>
+    <div class="page-subtitle">{{ doc_meta.description }}</div>
+  </div>
+  <a href="/query" style="
+    font-size:12px; font-weight:500; color:var(--primary);
+    text-decoration:none; display:flex; align-items:center; gap:5px;">
+    <i class="bi bi-chat-dots-fill"></i> Ask about this document
+  </a>
+</div>
+
+<!-- ── Markdown content ────────────────────────────────────────────────────── -->
+<div class="page-body">
+  <div class="card">
+    <div class="card-body" style="padding:32px 36px;">
+      <div class="markdown-body">
+        {{ content | safe }}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

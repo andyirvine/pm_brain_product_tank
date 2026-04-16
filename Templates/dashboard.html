@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- Page header -->
+<div class="page-header">
+  <div>
+    <div class="page-title">Strategy Dashboard</div>
+    <div class="page-subtitle">20 customer interviews · 9 strategic bets · 4 competitors · 6 market shifts</div>
+  </div>
+  <span style="font-size:12px;color:var(--muted);">Updated Q1 2024</span>
+</div>
+
+<div class="page-body">
+
+  <!-- ── Row 1: Market stat cards ──────────────────────────────────────── -->
+  <div class="row g-3 mb-4" id="stat-row"></div>
+
+  <!-- ── Row 2: Bet confidence + status doughnut ───────────────────────── -->
+  <div class="row g-3 mb-4">
+    <div class="col-lg-8">
+      <div class="card h-100">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Strategic Bet Confidence</div>
+            <div class="card-subtitle">Before vs. after market-shifts + competitive-landscape analysis (scale 0–5)</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap" style="height:290px;">
+            <canvas id="betsChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header">
+          <div class="card-title">Bet Status Breakdown</div>
+        </div>
+        <div class="card-body d-flex flex-column align-items-center justify-content-center">
+          <div class="chart-wrap" style="height:230px;width:100%;">
+            <canvas id="statusChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Row 3: Evidence + Competitors ─────────────────────────────────── -->
+  <div class="row g-3 mb-4">
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Customer Evidence per Bet</div>
+            <div class="card-subtitle">Number of interviews supporting each hypothesis</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap" style="height:250px;">
+            <canvas id="evidenceChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Competitor Landscape</div>
+            <div class="card-subtitle">Funding raised ($M) and estimated customers</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap" style="height:250px;">
+            <canvas id="competitorChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Row 4: OKR targets + Threat matrix ────────────────────────────── -->
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">2024 OKR Targets</div>
+            <div class="card-subtitle">Pre-launch baseline → year-end targets</div>
+          </div>
+        </div>
+        <div class="card-body" id="okr-section"></div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Competitor Threat Levels</div>
+        </div>
+        <div class="card-body" id="threat-section"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page-body -->
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Data from Flask ──────────────────────────────────────────────────────────
+const D = {{ data | safe }};
+
+// ── Colour maps ──────────────────────────────────────────────────────────────
+const statusColor = {
+  'very-high':  '#10b981',
+  'validated':  '#22c55e',
+  'upgraded':   '#6366f1',
+  'medium':     '#f59e0b',
+  'downgraded': '#f97316',
+  'hypothesis': '#a78bfa',
+  'rejected':   '#94a3b8',
+};
+const statusLabel = {
+  'very-high':  'Very High',
+  'validated':  'Validated',
+  'upgraded':   'Upgraded ↑',
+  'medium':     'Medium',
+  'downgraded': 'Downgraded ↓',
+  'hypothesis': 'Hypothesis',
+  'rejected':   'Rejected',
+};
+const threatCls = { HIGH:'t-HIGH', MEDIUM:'t-MEDIUM', LOW:'t-LOW' };
+
+Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+Chart.defaults.font.size   = 12;
+Chart.defaults.color       = '#64748b';
+
+// ── 1. Market stat cards ─────────────────────────────────────────────────────
+const statRow = document.getElementById('stat-row');
+D.market_stats.forEach(s => {
+  statRow.innerHTML += `
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:${s.color}20;">
+        <i class="bi bi-${s.icon}" style="color:${s.color};"></i>
+      </div>
+      <div>
+        <div class="stat-value">${s.value}</div>
+        <div class="stat-label">${s.label}</div>
+        <div class="stat-sub">${s.sub}</div>
+      </div>
+    </div>
+  </div>`;
+});
+
+// ── 2. Bet confidence (before/after grouped horizontal bar) ──────────────────
+const bets = D.bets;
+new Chart(document.getElementById('betsChart'), {
+  type: 'bar',
+  data: {
+    labels: bets.map(b => b.name),
+    datasets: [
+      {
+        label: 'Before new docs',
+        data: bets.map(b => b.prev),
+        backgroundColor: 'rgba(148,163,184,.25)',
+        borderColor:     'rgba(148,163,184,.5)',
+        borderWidth: 1,
+        borderRadius: 3,
+      },
+      {
+        label: 'Updated confidence',
+        data: bets.map(b => b.confidence),
+        backgroundColor: bets.map(b => statusColor[b.status] + 'cc'),
+        borderColor:     bets.map(b => statusColor[b.status]),
+        borderWidth: 1,
+        borderRadius: 3,
+      },
+    ],
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14 } },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const b = bets[ctx.dataIndex];
+            return `${ctx.dataset.label}: ${ctx.parsed.x}/5  (${b.label})`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: { max: 5, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } },
+      y: { ticks: { font: { size: 11 } }, grid: { display: false } },
+    },
+  },
+});
+
+// ── 3. Status doughnut ───────────────────────────────────────────────────────
+const counts = {};
+bets.forEach(b => { counts[b.status] = (counts[b.status] || 0) + 1; });
+new Chart(document.getElementById('statusChart'), {
+  type: 'doughnut',
+  data: {
+    labels:   Object.keys(counts).map(k => statusLabel[k] || k),
+    datasets: [{
+      data:            Object.values(counts),
+      backgroundColor: Object.keys(counts).map(k => statusColor[k]),
+      borderWidth: 2,
+      borderColor: '#fff',
+    }],
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '62%',
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 11, padding: 10, font: { size: 11 } } },
+    },
+  },
+});
+
+// ── 4. Evidence horizontal bar ───────────────────────────────────────────────
+const evBets = bets.filter(b => b.status !== 'rejected');
+new Chart(document.getElementById('evidenceChart'), {
+  type: 'bar',
+  data: {
+    labels: evBets.map(b => b.name),
+    datasets: [{
+      label: 'Interview mentions',
+      data:  evBets.map(b => b.evidence),
+      backgroundColor: evBets.map(b => statusColor[b.status] + 'bb'),
+      borderColor:     evBets.map(b => statusColor[b.status]),
+      borderWidth: 1,
+      borderRadius: 3,
+    }],
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { max: 22, ticks: { stepSize: 2 }, grid: { color: '#f1f5f9' } },
+      y: { ticks: { font: { size: 11 } }, grid: { display: false } },
+    },
+  },
+});
+
+// ── 5. Competitor grouped bar ─────────────────────────────────────────────────
+const comps = D.competitors;
+new Chart(document.getElementById('competitorChart'), {
+  type: 'bar',
+  data: {
+    labels: comps.map(c => c.name),
+    datasets: [
+      {
+        label: 'Funding ($M)',
+        data:  comps.map(c => c.funding),
+        backgroundColor: '#6366f1bb',
+        borderColor:     '#6366f1',
+        borderWidth: 1,
+        borderRadius: 3,
+      },
+      {
+        label: 'Customers (00s)',
+        data:  comps.map(c => +(c.customers / 100).toFixed(1)),
+        backgroundColor: '#06b6d4bb',
+        borderColor:     '#06b6d4',
+        borderWidth: 1,
+        borderRadius: 3,
+      },
+    ],
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14 } },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const c = comps[ctx.dataIndex];
+            if (ctx.datasetIndex === 0) return `Funding: $${c.funding}M`;
+            return `Customers: ~${c.customers.toLocaleString()}`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: { grid: { display: false } },
+      y: { grid: { color: '#f1f5f9' } },
+    },
+  },
+});
+
+// ── 6. OKR progress bars (all at 0 — pre-launch) ────────────────────────────
+const okrSec = document.getElementById('okr-section');
+D.okr_targets.forEach(o => {
+  const pct = o.target > 0 ? Math.round((o.current / o.target) * 100) : 0;
+  okrSec.innerHTML += `
+  <div class="okr-item">
+    <div class="okr-row">
+      <span class="okr-name">${o.label}</span>
+      <span class="okr-nums">${o.current}${o.unit} / ${o.target}${o.unit}</span>
+    </div>
+    <div class="okr-track">
+      <div class="okr-fill" style="width:${pct}%;background:${o.color};"></div>
+    </div>
+  </div>`;
+});
+
+// ── 7. Threat matrix ─────────────────────────────────────────────────────────
+const threatSec = document.getElementById('threat-section');
+comps.forEach(c => {
+  threatSec.innerHTML += `
+  <div class="threat-row">
+    <div>
+      <div class="threat-name">${c.name}</div>
+      <div class="threat-detail">~${c.customers.toLocaleString()} customers · $${c.funding}M raised</div>
+    </div>
+    <span class="badge-status ${threatCls[c.threat]}">${c.threat}</span>
+  </div>`;
+});
+</script>
+{% endblock %}

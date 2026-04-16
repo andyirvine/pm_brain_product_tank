@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- Page header -->
+<div class="page-header">
+  <div>
+    <div class="page-title">Query the Brain</div>
+    <div class="page-subtitle">Ask anything about Ledger's strategy, research, bets, or competitive position</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <span style="font-size:11.5px;color:var(--muted);">Powered by Claude · streaming responses</span>
+    <a href="/reports" style="font-size:12px;font-weight:500;color:var(--primary);text-decoration:none;display:flex;align-items:center;gap:5px;">
+      <i class="bi bi-journal-text"></i> View Reports
+    </a>
+  </div>
+</div>
+
+<!-- Query layout -->
+<div class="query-layout">
+
+  <!-- Messages -->
+  <div class="messages-area" id="messages">
+    <div class="empty-state" id="empty-state">
+      <i class="bi bi-chat-dots"></i>
+      <h3>Ask the Product Brain</h3>
+      <p>Query Ledger's customer research, OKRs, strategic bets, and competitive intelligence in plain English.</p>
+    </div>
+  </div>
+
+  <!-- Suggested queries -->
+  <div class="suggestions">
+    <span class="suggestions-label">Try:</span>
+    <button class="chip" onclick="useSuggestion(this)">Which bets have the highest validation?</button>
+    <button class="chip" onclick="useSuggestion(this)">How does the competitive landscape affect our bets?</button>
+    <button class="chip" onclick="useSuggestion(this)">What are our biggest strategic risks right now?</button>
+    <button class="chip" onclick="useSuggestion(this)">Which customer segment should we prioritize?</button>
+    <button class="chip" onclick="useSuggestion(this)">How do market shifts change our roadmap priorities?</button>
+    <button class="chip" onclick="useSuggestion(this)">What is Cleo Finance's biggest weakness?</button>
+  </div>
+
+  <!-- Input -->
+  <div class="input-row">
+    <textarea
+      id="query-input"
+      class="query-input"
+      rows="1"
+      placeholder="Ask about strategy, bets, customers, competition… (Enter to send, Shift+Enter for new line)"
+    ></textarea>
+    <button class="send-btn" id="send-btn" onclick="sendQuery()" title="Send">
+      <i class="bi bi-send-fill"></i>
+    </button>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const messagesEl = document.getElementById('messages');
+const inputEl    = document.getElementById('query-input');
+const sendBtn    = document.getElementById('send-btn');
+const emptyEl    = document.getElementById('empty-state');
+
+// Configure marked for safe rendering
+marked.setOptions({ breaks: true, gfm: true });
+
+// ── Auto-resize textarea ─────────────────────────────────────────────────────
+inputEl.addEventListener('input', () => {
+  inputEl.style.height = 'auto';
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+});
+
+// ── Enter to send, Shift+Enter for newline ────────────────────────────────────
+inputEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQuery(); }
+});
+
+// ── Suggestion chips ──────────────────────────────────────────────────────────
+function useSuggestion(btn) {
+  inputEl.value = btn.textContent.trim();
+  inputEl.dispatchEvent(new Event('input'));
+  inputEl.focus();
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function scrollBottom() {
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function appendMessage(role, html) {
+  if (emptyEl) emptyEl.style.display = 'none';
+  const wrap = document.createElement('div');
+  wrap.className = `message ${role}`;
+
+  const icon = role === 'user' ? 'person-fill' : 'robot';
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble' + (role === 'assistant' ? ' markdown-body' : '');
+  bubble.innerHTML = html;
+
+  const avatar = document.createElement('div');
+  avatar.className = 'msg-avatar';
+  avatar.innerHTML = `<i class="bi bi-${icon}"></i>`;
+
+  wrap.appendChild(avatar);
+  wrap.appendChild(bubble);
+  messagesEl.appendChild(wrap);
+  scrollBottom();
+  return bubble;
+}
+
+function showTyping() {
+  if (emptyEl) emptyEl.style.display = 'none';
+  const wrap = document.createElement('div');
+  wrap.className = 'message assistant';
+  wrap.id = 'typing';
+  wrap.innerHTML = `
+    <div class="msg-avatar"><i class="bi bi-robot"></i></div>
+    <div class="msg-bubble">
+      <div class="typing">
+        <span></span><span></span><span></span>
+      </div>
+    </div>`;
+  messagesEl.appendChild(wrap);
+  scrollBottom();
+  return wrap;
+}
+
+// ── Save report ───────────────────────────────────────────────────────────────
+async function saveReport(btn, question, answer) {
+  btn.disabled = true;
+  btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving…';
+  try {
+    const res = await fetch('/api/save-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, answer }),
+    });
+    const data = await res.json();
+    if (data.filename) {
+      btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Saved — <a href="/reports" style="color:inherit;text-decoration:underline;">View Reports</a>';
+    } else {
+      btn.innerHTML = '<i class="bi bi-exclamation-circle"></i> Error saving';
+      btn.disabled = false;
+    }
+  } catch (e) {
+    btn.innerHTML = '<i class="bi bi-exclamation-circle"></i> Error saving';
+    btn.disabled = false;
+  }
+}
+
+// ── Main send function ────────────────────────────────────────────────────────
+async function sendQuery() {
+  const question = inputEl.value.trim();
+  if (!question || sendBtn.disabled) return;
+
+  // Clear input
+  inputEl.value = '';
+  inputEl.style.height = 'auto';
+  sendBtn.disabled = true;
+
+  // User bubble
+  appendMessage('user', escHtml(question));
+
+  // Typing indicator
+  const typing = showTyping();
+
+  try {
+    const res = await fetch('/api/query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question }),
+    });
+
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+
+    typing.remove();
+    const bubble = appendMessage('assistant', '');
+    let fullText = '';
+
+    const reader  = res.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      for (const line of chunk.split('\n')) {
+        if (!line.startsWith('data: ')) continue;
+        const raw = line.slice(6).trim();
+        if (raw === '[DONE]') break;
+        try {
+          const token = JSON.parse(raw);
+          fullText += token;
+          bubble.innerHTML = marked.parse(fullText);
+          scrollBottom();
+        } catch (_) { /* partial chunk — ignore */ }
+      }
+    }
+
+    // Save button
+    if (fullText) {
+      const saveBar = document.createElement('div');
+      saveBar.className = 'save-bar';
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'save-report-btn';
+      saveBtn.innerHTML = '<i class="bi bi-download"></i> Save as Report';
+      saveBtn.addEventListener('click', () => saveReport(saveBtn, question, fullText));
+      saveBar.appendChild(saveBtn);
+      bubble.parentElement.appendChild(saveBar);
+      scrollBottom();
+    }
+
+  } catch (err) {
+    typing.remove();
+    appendMessage('assistant', `<em style="color:var(--danger);">Error: ${escHtml(err.message)}</em>`);
+  } finally {
+    sendBtn.disabled = false;
+    inputEl.focus();
+  }
+}
+</script>
+{% endblock %}

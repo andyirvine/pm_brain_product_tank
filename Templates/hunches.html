@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="page-title"><i class="bi bi-lightbulb-fill" style="color:var(--primary);margin-right:8px;"></i>Hunches</div>
+    <div class="page-subtitle">Capture early signals and untested ideas before they become strategic bets</div>
+  </div>
+  <button id="new-hunch-btn" onclick="toggleForm()"
+    style="font-size:12px;font-weight:500;color:#fff;background:var(--primary);border:none;display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;cursor:pointer;transition:background .15s;"
+    onmouseover="this.style.background='var(--primary-dark)'" onmouseout="this.style.background='var(--primary)'">
+    <i class="bi bi-plus-lg"></i> New hunch
+  </button>
+</div>
+
+<!-- Capture form -->
+<div id="hunch-form-wrap" style="display:none;background:var(--card);border-bottom:1px solid var(--border);padding:20px 32px;">
+  <div style="max-width:680px;">
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px;">New Hunch</div>
+    <textarea id="f-body" placeholder="Describe your hunch…"
+      style="width:100%;resize:vertical;outline:none;border:1.5px solid var(--border);border-radius:10px;padding:11px 15px;font-family:inherit;font-size:14px;background:var(--bg);color:var(--text);min-height:80px;transition:border-color .15s;"
+      onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+    <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
+      <select id="f-area"
+        style="flex:1;min-width:160px;outline:none;border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);cursor:pointer;">
+        <option value="">Product area (optional)</option>
+        {% for area in product_areas %}
+        <option value="{{ area }}">{{ area }}</option>
+        {% endfor %}
+      </select>
+      <select id="f-okr"
+        style="flex:1;min-width:160px;outline:none;border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);cursor:pointer;">
+        <option value="">OKR link (optional)</option>
+        {% for label in okr_labels %}
+        <option value="{{ label }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="margin-top:12px;">
+      <div style="font-size:12px;font-weight:500;color:var(--muted);margin-bottom:8px;">Confidence</div>
+      <div style="display:flex;gap:16px;">
+        {% for level in ['low', 'medium', 'high'] %}
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text);">
+          <input type="radio" name="f-confidence" value="{{ level }}"
+            {% if level == 'medium' %}checked{% endif %}
+            style="accent-color:var(--primary);width:15px;height:15px;">
+          {{ level | capitalize }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px;">
+      <button onclick="saveHunch()"
+        style="padding:8px 18px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:background .15s;"
+        onmouseover="this.style.background='var(--primary-dark)'" onmouseout="this.style.background='var(--primary)'">
+        Save hunch
+      </button>
+      <button onclick="toggleForm()"
+        style="padding:8px 18px;background:var(--bg);color:var(--muted);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="page-body">
+
+  <!-- Filter bar -->
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:20px;">
+    <span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap;">Filter:</span>
+    <button class="chip filter-chip active" onclick="applyFilter('all',this)">All</button>
+    <button class="chip filter-chip" onclick="applyFilter('high',this)">High</button>
+    <button class="chip filter-chip" onclick="applyFilter('medium',this)">Medium</button>
+    <button class="chip filter-chip" onclick="applyFilter('low',this)">Low</button>
+    <button class="chip filter-chip" onclick="applyFilter('promoted',this)">Promoted</button>
+  </div>
+
+  <!-- Hunches list -->
+  <div id="hunches-list">
+    {% if hunches %}
+      {% for h in hunches %}
+      <div class="hunch-card"
+           data-confidence="{{ h.confidence }}"
+           data-promoted="{{ 'true' if h.promotedToHypothesis else 'false' }}"
+           data-id="{{ h.id }}"
+           style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.04);">
+        <!-- Header row: badges + date + delete -->
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+          <div class="card-badges" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <span class="badge-status c-{{ h.confidence }}">{{ h.confidence }}</span>
+            {% if h.productArea %}
+            <span style="font-size:11px;font-weight:500;color:var(--muted);background:var(--bg);border:1px solid var(--border);padding:2px 9px;border-radius:20px;">{{ h.productArea }}</span>
+            {% endif %}
+            {% if h.promotedToHypothesis %}
+            <span class="badge-status s-hypothesis">Promoted</span>
+            {% endif %}
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+            <span style="font-size:11.5px;color:var(--muted);">{{ h.createdAt[:10] }}</span>
+            <button onclick="deleteHunch('{{ h.id }}',this)" title="Delete"
+              style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 4px;line-height:1;border-radius:4px;transition:color .12s;"
+              onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--muted)'">
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+        </div>
+        <!-- Body text -->
+        <p style="margin:10px 0 10px;font-size:14px;line-height:1.65;color:var(--text);">{{ h.body }}</p>
+        <!-- Footer row: OKR link + promote action -->
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div>
+            {% if h.okrLink %}
+            <span style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px;">
+              <i class="bi bi-bullseye"></i> {{ h.okrLink }}
+            </span>
+            {% endif %}
+          </div>
+          <div class="promote-area">
+            {% if not h.promotedToHypothesis %}
+            <button onclick="promoteHunch('{{ h.id }}',this)"
+              style="font-size:12px;font-weight:500;color:var(--primary);background:var(--primary-light);border:1px solid #c7d2fe;border-radius:7px;padding:5px 12px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .12s;"
+              onmouseover="this.style.background='#e0e7ff'" onmouseout="this.style.background='var(--primary-light)'">
+              <i class="bi bi-arrow-up-circle"></i> Promote to hypothesis
+            </button>
+            {% else %}
+            <span style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px;">
+              <i class="bi bi-check-circle-fill" style="color:var(--success);"></i> Promoted to hypothesis
+            </span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+    <div class="empty-state" id="empty-state">
+      <i class="bi bi-lightbulb"></i>
+      <h3>No hunches yet</h3>
+      <p>Capture early signals and untested ideas before they become strategic bets.</p>
+      <button onclick="toggleForm()"
+        style="display:inline-flex;align-items:center;gap:6px;margin-top:14px;padding:9px 18px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">
+        <i class="bi bi-plus-lg"></i> Add your first hunch
+      </button>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleForm() {
+  const wrap = document.getElementById('hunch-form-wrap');
+  const btn  = document.getElementById('new-hunch-btn');
+  const open = wrap.style.display === 'none';
+  wrap.style.display = open ? 'block' : 'none';
+  btn.innerHTML = open
+    ? '<i class="bi bi-x-lg"></i> Cancel'
+    : '<i class="bi bi-plus-lg"></i> New hunch';
+  if (open) document.getElementById('f-body').focus();
+}
+
+async function saveHunch() {
+  const bodyEl = document.getElementById('f-body');
+  const body   = bodyEl.value.trim();
+  if (!body) { bodyEl.focus(); bodyEl.style.borderColor = 'var(--danger)'; return; }
+  bodyEl.style.borderColor = 'var(--border)';
+
+  const payload = {
+    body,
+    productArea: document.getElementById('f-area').value,
+    okrLink:     document.getElementById('f-okr').value,
+    confidence:  document.querySelector('input[name="f-confidence"]:checked').value,
+  };
+
+  const res = await fetch('/api/hunches', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) return;
+  const h = await res.json();
+
+  // Reset form fields
+  bodyEl.value = '';
+  document.getElementById('f-area').value = '';
+  document.getElementById('f-okr').value  = '';
+  document.querySelector('input[name="f-confidence"][value="medium"]').checked = true;
+  toggleForm();
+
+  // Remove empty state if present
+  const empty = document.getElementById('empty-state');
+  if (empty) empty.remove();
+
+  // Prepend card to list
+  document.getElementById('hunches-list').insertAdjacentHTML('afterbegin', buildCardHTML(h));
+}
+
+async function promoteHunch(id, btn) {
+  btn.disabled = true;
+  const res = await fetch('/api/hunches/' + id, {
+    method: 'PATCH',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({promotedToHypothesis: true}),
+  });
+  if (!res.ok) { btn.disabled = false; return; }
+
+  const card = btn.closest('.hunch-card');
+  card.dataset.promoted = 'true';
+
+  // Swap promote button for confirmation text
+  btn.closest('.promote-area').innerHTML =
+    '<span style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px;">' +
+    '<i class="bi bi-check-circle-fill" style="color:var(--success);"></i> Promoted to hypothesis</span>';
+
+  // Add promoted badge
+  card.querySelector('.card-badges').insertAdjacentHTML('beforeend',
+    '<span class="badge-status s-hypothesis">Promoted</span>');
+}
+
+async function deleteHunch(id, btn) {
+  if (!confirm('Delete this hunch?')) return;
+  const res = await fetch('/api/hunches/' + id, {method: 'DELETE'});
+  if (!res.ok) return;
+  btn.closest('.hunch-card').remove();
+  if (!document.querySelector('.hunch-card')) {
+    document.getElementById('hunches-list').innerHTML =
+      '<div class="empty-state" id="empty-state">' +
+      '<i class="bi bi-lightbulb"></i><h3>No hunches yet</h3>' +
+      '<p>Capture early signals and untested ideas before they become strategic bets.</p>' +
+      '<button onclick="toggleForm()" style="display:inline-flex;align-items:center;gap:6px;margin-top:14px;padding:9px 18px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">' +
+      '<i class="bi bi-plus-lg"></i> Add your first hunch</button></div>';
+  }
+}
+
+function applyFilter(filter, el) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.hunch-card').forEach(card => {
+    const conf     = card.dataset.confidence;
+    const promoted = card.dataset.promoted === 'true';
+    let show = filter === 'all'
+      || (filter === 'promoted' && promoted)
+      || (filter !== 'promoted' && conf === filter);
+    card.style.display = show ? 'block' : 'none';
+  });
+}
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function buildCardHTML(h) {
+  const date      = h.createdAt.slice(0, 10);
+  const areaBadge = h.productArea
+    ? `<span style="font-size:11px;font-weight:500;color:var(--muted);background:var(--bg);border:1px solid var(--border);padding:2px 9px;border-radius:20px;">${esc(h.productArea)}</span>` : '';
+  const okrLink = h.okrLink
+    ? `<span style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px;"><i class="bi bi-bullseye"></i> ${esc(h.okrLink)}</span>` : '';
+  return `
+  <div class="hunch-card" data-confidence="${esc(h.confidence)}" data-promoted="false" data-id="${esc(h.id)}"
+       style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.04);">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+      <div class="card-badges" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <span class="badge-status c-${esc(h.confidence)}">${esc(h.confidence)}</span>
+        ${areaBadge}
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+        <span style="font-size:11.5px;color:var(--muted);">${esc(date)}</span>
+        <button onclick="deleteHunch('${esc(h.id)}',this)" title="Delete"
+          style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 4px;line-height:1;border-radius:4px;transition:color .12s;"
+          onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--muted)'">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
+    </div>
+    <p style="margin:10px 0 10px;font-size:14px;line-height:1.65;color:var(--text);">${esc(h.body)}</p>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div>${okrLink}</div>
+      <div class="promote-area">
+        <button onclick="promoteHunch('${esc(h.id)}',this)"
+          style="font-size:12px;font-weight:500;color:var(--primary);background:var(--primary-light);border:1px solid #c7d2fe;border-radius:7px;padding:5px 12px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .12s;"
+          onmouseover="this.style.background='#e0e7ff'" onmouseout="this.style.background='var(--primary-light)'">
+          <i class="bi bi-arrow-up-circle"></i> Promote to hypothesis
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+</script>
+{% endblock %}

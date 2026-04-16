@@ -1,0 +1,65 @@
+[
+  {
+    "id": "e71a749c-9797-4a9c-938b-73719dbe23a2",
+    "body": "sfadhjkjsakfs fed",
+    "productArea": "Tax & Compliance",
+    "okrLink": "Accountant partners",
+    "confidence": "medium",
+    "createdAt": "2026-03-24T16:58:12.645225",
+    "promotedToHypothesis": false
+  },
+  {
+    "id": "a1b2c3d4-0001-0001-0001-000000000001",
+    "body": "Freelancers who get paid faster are significantly more likely to upgrade to a paid plan. The emotional relief of seeing money arrive might be a stronger conversion trigger than any feature we build.",
+    "productArea": "Invoicing & Collections",
+    "okrLink": "MRR",
+    "confidence": "high",
+    "createdAt": "2024-02-14T09:22:00.000000",
+    "promotedToHypothesis": false
+  },
+  {
+    "id": "a1b2c3d4-0002-0002-0002-000000000002",
+    "body": "Accountants are holding back referrals because they don't trust that Ledger handles edge cases correctly at tax time. If we could give them a sandbox or a 'review mode' before they recommend us to clients, referral rate would jump.",
+    "productArea": "Accountant Experience",
+    "okrLink": "Accountant Partners",
+    "confidence": "medium",
+    "createdAt": "2024-02-19T14:05:00.000000",
+    "promotedToHypothesis": false
+  },
+  {
+    "id": "a1b2c3d4-0003-0003-0003-000000000003",
+    "body": "Users who set up cashflow forecasting in the first week retain at ~2x the rate of those who don't. Forecasting might be our real activation metric, not invoice sending.",
+    "productArea": "Cashflow & Forecasting",
+    "okrLink": "Feature Adoption",
+    "confidence": "high",
+    "createdAt": "2024-02-27T11:40:00.000000",
+    "promotedToHypothesis": false
+  },
+  {
+    "id": "a1b2c3d4-0004-0004-0004-000000000004",
+    "body": "The tax anxiety spike in March/April is an acquisition opportunity we're not capitalising on. A lightweight 'tax readiness score' surfaced at the right moment could convert a lot of fence-sitters.",
+    "productArea": "Tax & Compliance",
+    "okrLink": "Tax Clarity NPS",
+    "confidence": "medium",
+    "createdAt": "2024-03-04T08:15:00.000000",
+    "promotedToHypothesis": false
+  },
+  {
+    "id": "a1b2c3d4-0005-0005-0005-000000000005",
+    "body": "Most freelancers have no mental model for what 'healthy cashflow' looks like. If we gave them a simple benchmark against peers in their industry, they'd engage with the forecasting features far more.",
+    "productArea": "Cashflow & Forecasting",
+    "okrLink": "NPS Score",
+    "confidence": "low",
+    "createdAt": "2024-03-11T16:30:00.000000",
+    "promotedToHypothesis": false
+  },
+  {
+    "id": "a1b2c3d4-0006-0006-0006-000000000006",
+    "body": "Auto-categorisation errors feel catastrophic to users even when rare. A single miscategorised transaction destroys trust in the whole platform. Reducing error rate from 5% to 1% might matter less than making errors feel recoverable and low-stakes.",
+    "productArea": "Platform & Core",
+    "okrLink": "NPS Score",
+    "confidence": "medium",
+    "createdAt": "2024-03-18T10:00:00.000000",
+    "promotedToHypothesis": false
+  }
+]

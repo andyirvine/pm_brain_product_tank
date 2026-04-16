@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledger Strategic Bets — Confidence Report</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: #0f0f13;
+    color: #e8e8f0;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .deck {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  .slide {
+    display: none;
+    width: 100%;
+    height: 100%;
+    padding: 60px 80px;
+    flex-direction: column;
+    justify-content: center;
+    position: absolute;
+    top: 0; left: 0;
+    animation: fadeIn 0.3s ease;
+  }
+  .slide.active { display: flex; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── TITLE SLIDE ── */
+  .slide-title {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding-bottom: 80px;
+  }
+  .slide-title .eyebrow {
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #6c8ebf;
+    margin-bottom: 16px;
+  }
+  .slide-title h1 {
+    font-size: 58px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: #ffffff;
+    max-width: 700px;
+    margin-bottom: 24px;
+  }
+  .slide-title h1 span { color: #4fc3f7; }
+  .slide-title .meta {
+    font-size: 16px;
+    color: #8899aa;
+  }
+  .title-accent {
+    position: absolute;
+    top: 60px; right: 80px;
+    display: flex; gap: 10px;
+  }
+  .title-accent .dot {
+    width: 12px; height: 12px; border-radius: 50%;
+  }
+
+  /* ── OVERVIEW SLIDE ── */
+  .slide-overview { background: #13131a; }
+
+  /* ── TIER SLIDES ── */
+  .slide-tier1 { background: #0d1f0d; }
+  .slide-tier2 { background: #1a1a0d; }
+  .slide-tier3 { background: #1a120d; }
+  .slide-tier4 { background: #1a0d0d; }
+  .slide-summary { background: #13131a; }
+
+  /* ── SHARED ── */
+  .slide-header {
+    margin-bottom: 40px;
+  }
+  .tier-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .tier1 { background: #0d3d0d; color: #5dde5d; border: 1px solid #2d6d2d; }
+  .tier2 { background: #3d3300; color: #f0c040; border: 1px solid #6d5d00; }
+  .tier3 { background: #3d2000; color: #e08030; border: 1px solid #6d4000; }
+  .tier4 { background: #3d0d0d; color: #e05050; border: 1px solid #6d1d1d; }
+  .rejected-badge { background: #2d0d1a; color: #e06080; border: 1px solid #5d1d2d; }
+
+  .slide h2 {
+    font-size: 38px;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.15;
+  }
+  .slide h2 span { color: #4fc3f7; }
+  .slide .subtitle {
+    font-size: 18px;
+    color: #8899aa;
+    margin-top: 8px;
+  }
+
+  /* ── BET CARDS ── */
+  .bet-grid {
+    display: grid;
+    gap: 16px;
+  }
+  .bet-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+  .bet-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  .bet-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 22px 24px;
+  }
+  .bet-card .bet-num {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #556677;
+    margin-bottom: 6px;
+  }
+  .bet-card h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #e8e8f0;
+    margin-bottom: 10px;
+  }
+  .bet-card .conf-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .bet-card p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #9aabb8;
+  }
+  .bet-card .action {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    font-size: 13px;
+    color: #6c8ebf;
+  }
+  .bet-card .action strong { color: #4fc3f7; }
+
+  /* ── QUOTES ── */
+  .quotes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 14px 0;
+  }
+  .quote {
+    background: rgba(255,255,255,0.03);
+    border-left: 3px solid #4fc3f7;
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    font-size: 13px;
+    font-style: italic;
+    color: #aabbc8;
+  }
+  .quote .source {
+    font-style: normal;
+    font-size: 11px;
+    color: #556677;
+    margin-top: 4px;
+  }
+
+  /* ── CONFIDENCE BARS (overview) ── */
+  .conf-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .conf-row:last-child { border-bottom: none; }
+  .conf-row .bet-label {
+    width: 260px;
+    font-size: 14px;
+    color: #ccd8e0;
+    flex-shrink: 0;
+  }
+  .conf-row .bet-label .num { color: #556677; margin-right: 6px; font-size: 12px; }
+  .conf-bar-wrap { flex: 1; height: 8px; background: rgba(255,255,255,0.07); border-radius: 4px; overflow: hidden; }
+  .conf-bar { height: 100%; border-radius: 4px; }
+  .conf-row .conf-text { width: 120px; text-align: right; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+
+  /* ── SUMMARY TABLE ── */
+  .sum-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .sum-table th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #556677;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .sum-table td {
+    padding: 11px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    color: #c0cdd8;
+    vertical-align: middle;
+  }
+  .sum-table tr:last-child td { border-bottom: none; }
+  .sum-table .bet-name { color: #e0e8f0; font-weight: 500; }
+  .pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── NAV ── */
+  .nav {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 40px;
+    padding: 10px 20px;
+    backdrop-filter: blur(10px);
+    z-index: 100;
+  }
+  .nav button {
+    background: none;
+    border: none;
+    color: #8899aa;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 2px 8px;
+    border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .nav button:hover { color: #fff; background: rgba(255,255,255,0.1); }
+  .nav button:disabled { opacity: 0.25; cursor: default; }
+  .nav .counter {
+    font-size: 13px;
+    color: #667788;
+    min-width: 60px;
+    text-align: center;
+  }
+  .nav .dots { display: flex; gap: 6px; }
+  .nav .dot-ind {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    transition: background 0.2s;
+  }
+  .nav .dot-ind.on { background: #4fc3f7; }
+
+  /* ── SECTION DIVIDER ── */
+  .divider-slide {
+    background: #0f0f13;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .divider-slide .tier-num {
+    font-size: 120px;
+    font-weight: 800;
+    line-height: 1;
+    opacity: 0.06;
+    color: #fff;
+    position: absolute;
+  }
+  .divider-slide .content { position: relative; z-index: 1; }
+  .divider-slide h2 { font-size: 44px; font-weight: 700; margin-top: 16px; }
+  .divider-slide p { font-size: 18px; color: #8899aa; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1: TITLE -->
+  <div class="slide slide-title active">
+    <div class="title-accent">
+      <div class="dot" style="background:#5dde5d"></div>
+      <div class="dot" style="background:#f0c040"></div>
+      <div class="dot" style="background:#e08030"></div>
+      <div class="dot" style="background:#e05050"></div>
+    </div>
+    <div class="eyebrow">Ledger · Product Strategy</div>
+    <h1>Strategic Bets<br><span>Ordered by Confidence</span></h1>
+    <div class="meta">Q1 2026 &nbsp;·&nbsp; 9 bets evaluated &nbsp;·&nbsp; 20 customer interviews</div>
+  </div>
+
+  <!-- SLIDE 2: OVERVIEW -->
+  <div class="slide slide-overview">
+    <div class="slide-header">
+      <div class="tier-badge tier1">Confidence Ranking</div>
+      <h2>All 9 Bets at a Glance</h2>
+      <div class="subtitle">Ranked by evidence strength across 20 interviews</div>
+    </div>
+    <div style="max-width:760px">
+      <div class="conf-row">
+        <div class="bet-label"><span class="num">7</span>Solopreneurs ≠ Agencies</div>
+        <div class="conf-bar-wrap"><div class="conf-bar" style="width:100%;background:#5dde5d"></div></div>
+        <div class="conf-text" style="color:#5dde5d">VERY HIGH</div>
+      </div>
+      <div class="conf-row">
+        <div class="bet-label"><span class="num">2</span>Emotion &gt; Features</div>
+        <div class="conf-bar-wrap"><div class="conf-bar" style="width:85%;background:#7dd87d"></div></div>
+        <div class="conf-text" style="color:#7dd87d">HIGH</div>
+      </div>
+      <div class="conf-row">
+        <div class="bet-label"><span class="num">1</span>Consolidation Beats Best-of-Breed</div>
+        <div class="conf-bar-wrap"><div class="conf-bar" style="width:85%;background:#7dd87d"></div></div>
+        <div class="conf-text" style="color:#7dd87d">HIGH</div>
+      </div>
+      <div class="conf-row">
+        <div class="bet-label"><span class="num">5</span>Year-Round Tax Visibility</div>
+        <div class="conf-bar-wrap"><div class="conf-bar" style="width:85%;background:#7dd87d"></div></div>
+        <div class="conf-text" style="color:#7dd87d">HIGH</div>
+      </div>
+      <div class="conf-row">
+        <div class="bet-label"><span class="num">4</span>Decision-Making Differentiator</div>
+        <div class="conf-bar-wrap"><div class="conf-bar" style="width:65%;background:#f0c040"></div></div>
+        <div class="conf-text" style="color:#f0c040">MED-HIGH</div>
+      </div>
+      <div class="conf-row">
+        <div class="bet-label"><span class="num">6</span>Recurring Invoicing</div>
+        <div class="conf-bar-wrap"><div class="conf-bar" style="width:65%;background:#f0c040"></div></div>
+        <div class="conf-text" style="color:#f0c040">MED-HIGH</div>
+      </div>
+      <div class="conf-row">
+        <div class="bet-label"><span class="num">3</span>Accountants as Distribution</div>
+        <div class="conf-bar-wrap"><div class="conf-bar" style="width:45%;background:#e08030"></div></div>
+        <div class="conf-text" style="color:#e08030">MEDIUM</div>
+      </div>
+      <div class="conf-row">
+        <div class="bet-label"><span class="num">9</span>Deduction Optimization</div>
+        <div class="conf-bar-wrap"><div class="conf-bar" style="width:20%;background:#e05050"></div></div>
+        <div class="conf-text" style="color:#e05050">LOW</div>
+      </div>
+      <div class="conf-row">
+        <div class="bet-label"><span class="num">8</span>Done-For-You Tax Prep</div>
+        <div class="conf-bar-wrap"><div class="conf-bar" style="width:5%;background:#883333"></div></div>
+        <div class="conf-text" style="color:#883333">REJECTED</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: TIER 1 DIVIDER -->
+  <div class="slide divider-slide">
+    <div class="tier-num">1</div>
+    <div class="content">
+      <div class="tier-badge tier1">Tier 1</div>
+      <h2 style="color:#5dde5d">High Confidence</h2>
+      <p>Bets 7, 2, 1, 5 — Validated by strong interview evidence</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: BET 7 -->
+  <div class="slide slide-tier1">
+    <div class="slide-header">
+      <div class="tier-badge tier1">🟢 Tier 1 · Very High Confidence</div>
+      <h2>Bet 7: Solopreneurs <span>≠</span> Agencies</h2>
+      <div class="subtitle">Two distinct segments with fundamentally different needs</div>
+    </div>
+    <div class="bet-grid cols-2">
+      <div class="bet-card">
+        <div class="bet-num">Segment A · Solopreneurs</div>
+        <h3>Simplicity &amp; Emotional Relief</h3>
+        <p>Maya, Sarah, Lisa, Priya, Amara, Emma, Rachel, Olivia, Nathan — prioritize speed, ease, and automation that overcomes anxiety.</p>
+        <div class="action"><strong>Need:</strong> Simplified defaults, gentle automation, reduced friction</div>
+      </div>
+      <div class="bet-card">
+        <div class="bet-num">Segment B · Agencies</div>
+        <h3>Visibility &amp; Integration</h3>
+        <p>Raj, James, Tom, Michael, Vikram, Carlos, Sophie, Marcus, Fiona — prioritize team features, data consolidation, and system integration.</p>
+        <div class="action"><strong>Need:</strong> Full UI, integrations, multi-user support</div>
+      </div>
+    </div>
+    <div class="bet-card" style="margin-top:16px">
+      <div class="bet-num">Next Action</div>
+      <p class="action"><strong>Build segment-specific onboarding and UX defaults.</strong> A/B test simplified vs. full UI by segment in Q2. Measure NPS + activation time by segment.</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: BET 2 -->
+  <div class="slide slide-tier1">
+    <div class="slide-header">
+      <div class="tier-badge tier1">🟢 Tier 1 · High Confidence</div>
+      <h2>Bet 2: <span>Emotion</span> &gt; Features</h2>
+      <div class="subtitle">Emotional barriers — not functional gaps — are the primary blocker for solopreneurs</div>
+    </div>
+    <div class="quotes">
+      <div class="quote">
+        "I don't want to be the person who nags people for money; if it's automated, it's okay."
+        <div class="source">— Maya · Interview 001</div>
+      </div>
+      <div class="quote">
+        "If the system handled it automatically, I'd invoice weekly instead of quarterly."
+        <div class="source">— Sarah · Interview 003</div>
+      </div>
+      <div class="quote">
+        "I'm anxious about taxes; I want clarity, not features."
+        <div class="source">— Emma · Interview 011</div>
+      </div>
+    </div>
+    <div class="bet-grid cols-2" style="margin-top:16px">
+      <div class="bet-card">
+        <div class="bet-num">Root Cause</div>
+        <p>5+ interviews surfaced <strong style="color:#e8e8f0">shame and anxiety</strong> as root causes of underusing financial tools — not missing functionality.</p>
+      </div>
+      <div class="bet-card">
+        <div class="bet-num">Next Action</div>
+        <p>Tone/psychology testing on reminders. Default to "helpful tone." <strong style="color:#4fc3f7">Measure anxiety reduction as a product metric.</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: BET 1 -->
+  <div class="slide slide-tier1">
+    <div class="slide-header">
+      <div class="tier-badge tier1">🟢 Tier 1 · High Confidence</div>
+      <h2>Bet 1: <span>Consolidation</span> Beats Best-of-Breed</h2>
+      <div class="subtitle">8/20 interviews cite friction from 3+ tools — consolidation directly validated</div>
+    </div>
+    <div class="quotes">
+      <div class="quote">
+        "Invoicing + payment tracking in one place reduced admin by 3–4 hours/month."
+        <div class="source">— Raj · Interview 002</div>
+      </div>
+      <div class="quote">
+        "Wave + QuickBooks + Stripe is chaos."
+        <div class="source">— David · Interview 010</div>
+      </div>
+      <div class="quote">
+        "Syncing FreshBooks with Asana + QuickBooks is constant friction."
+        <div class="source">— Michael · Interview 008</div>
+      </div>
+    </div>
+    <div class="bet-card" style="margin-top:16px">
+      <div class="bet-num">Market Tailwind</div>
+      <p>Solopreneur economy growing — more income streams = more tool fragmentation = <strong style="color:#4fc3f7">stronger consolidation case</strong> (Market Shift 3)</p>
+      <div class="action"><strong>Next:</strong> Track "tool consolidation NPS." Measure retention on accounts that expand from invoicing to taxes.</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: BET 5 -->
+  <div class="slide slide-tier1">
+    <div class="slide-header">
+      <div class="tier-badge tier1">🟢 Tier 1 · High Confidence</div>
+      <h2>Bet 5: Year-Round Tax <span>Visibility</span></h2>
+      <div class="subtitle">8/10 tax interviews mentioned the "April surprise" problem</div>
+    </div>
+    <div class="quotes">
+      <div class="quote">
+        "Last year surprised with $40K tax bill; this year planning ahead because I see profit monthly."
+        <div class="source">— Vikram · Interview 012</div>
+      </div>
+      <div class="quote">
+        "Owed $35K in April; would have saved differently if I saw it coming."
+        <div class="source">— Rachel · Interview 013</div>
+      </div>
+      <div class="quote">
+        "Setting aside $20K/quarter; would have panicked in April otherwise."
+        <div class="source">— Leo · Interview 020</div>
+      </div>
+    </div>
+    <div class="bet-card" style="margin-top:16px">
+      <div class="bet-num">OKR Link · O1-KR2</div>
+      <p>Directly supports target: <strong style="color:#4fc3f7">70% of users report confidence in their tax position (7+/10)</strong></p>
+      <div class="action"><strong>Next:</strong> Validate quarterly estimate accuracy vs. actual tax bills. Measure whether estimates change savings behavior.</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8: TIER 2 DIVIDER -->
+  <div class="slide divider-slide">
+    <div class="tier-num">2</div>
+    <div class="content">
+      <div class="tier-badge tier2">Tier 2</div>
+      <h2 style="color:#f0c040">Medium-High Confidence</h2>
+      <p>Bets 4 &amp; 6 — Concept validated, product execution untested</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 9: BET 4 + BET 6 -->
+  <div class="slide slide-tier2">
+    <div class="slide-header">
+      <div class="tier-badge tier2">🟡 Tier 2 · Medium-High Confidence</div>
+      <h2>Decision-Making &amp; <span>Recurring Invoicing</span></h2>
+    </div>
+    <div class="bet-grid cols-2">
+      <div class="bet-card">
+        <div class="bet-num">Bet 4</div>
+        <h3>Decision-Making is Our Differentiator</h3>
+        <div class="conf-label" style="color:#f0c040">Medium-High</div>
+        <p>7/20 owners make conservative decisions due to uncertainty. 5+ want active help deciding. No competitor owns this space yet.</p>
+        <div class="quotes" style="margin-top:10px">
+          <div class="quote" style="font-size:12px">"Ledger helped me model my S-Corp decision." <div class="source">— Sophie · 015</div></div>
+        </div>
+        <div class="action"><strong>Risk:</strong> Window is closing. Cleo Finance moving into tax. AI commoditizing compliance layer.<br><br><strong>Next:</strong> Hiring impact calculator Q3. Launch pricing benchmark.</div>
+      </div>
+      <div class="bet-card">
+        <div class="bet-num">Bet 6</div>
+        <h3>Recurring Invoicing Saves Time</h3>
+        <div class="conf-label" style="color:#f0c040">Medium-High</div>
+        <p>3/10 IC interviews validated directionally. Actual time savings post-launch unmeasured.</p>
+        <div class="quotes" style="margin-top:10px">
+          <div class="quote" style="font-size:12px">"3–4 recurring clients; manual invoicing = 2–3 hours/month." <div class="source">— Amara · 007</div></div>
+        </div>
+        <div class="action"><strong>OKR O1-KR1:</strong> 50% reduction in time on invoicing + tax prep (baseline: 6–8 hrs/month)<br><br><strong>Next:</strong> Launch Q2. Survey Amara post-launch. Track invoice frequency trends.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 10: TIER 3 DIVIDER -->
+  <div class="slide divider-slide">
+    <div class="tier-num">3</div>
+    <div class="content">
+      <div class="tier-badge tier3">Tier 3</div>
+      <h2 style="color:#e08030">Medium Confidence</h2>
+      <p>Bet 3 — Needs more data before significant resourcing</p>
+    </div>
+  </div>
+
+  <!-- SLIDE 11: BET 3 -->
+  <div class="slide slide-tier3">
+    <div class="slide-header">
+      <div class="tier-badge tier3">🟠 Tier 3 · Medium Confidence</div>
+      <h2>Bet 3: Accountants Are <span>Distribution</span></h2>
+      <div class="subtitle">Weakest validated bet — 1 direct + 2 indirect signals</div>
+    </div>
+    <div class="bet-grid cols-2">
+      <div>
+        <div class="quotes">
+          <div class="quote">
+            "As an accountant, I recommend Ledger to my clients because I use it myself."
+            <div class="source">— David · Interview 010</div>
+          </div>
+          <div class="quote">
+            "My CPA is my trusted advisor; if they suggested Ledger, I'd try it."
+            <div class="source">— Rachel · Interview 013</div>
+          </div>
+          <div class="quote">
+            "My accountant handles everything; if they recommended a tool, I'd use it."
+            <div class="source">— Fiona · Interview 019</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="bet-card">
+          <div class="bet-num">Why It Still Matters</div>
+          <p>No direct competitor has built an accountant program. If validated, this is a <strong style="color:#e08030">durable distribution moat.</strong></p>
+          <div class="action">OKR O3-KR2: 50 accountant partners by end of 2026</div>
+        </div>
+        <div class="bet-card">
+          <div class="bet-num">Next Actions</div>
+          <p>1. Reach out to David (Int. 010) to map recommendation workflow.<br>2. Design accountant read-only view MVP for Q2.<br>3. Launch pilot program Q3.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 12: TIER 4 + REJECTED -->
+  <div class="slide slide-tier4">
+    <div class="slide-header">
+      <div class="tier-badge tier4">🔴 Tier 4 · Low Confidence &amp; Rejected</div>
+      <h2>Bets 9 &amp; 8: <span>Don't Resource Yet</span></h2>
+    </div>
+    <div class="bet-grid cols-2">
+      <div class="bet-card">
+        <div class="bet-num">Bet 9 · Low Confidence</div>
+        <h3>Deduction Optimization (+10–15%)</h3>
+        <p>Hypothesis only — not yet tested with users. Secondary research suggests a 15–25% deduction gap but no behavioral evidence exists.</p>
+        <div class="quotes" style="margin-top:10px">
+          <div class="quote" style="font-size:12px">"Probably conservative on deductions but no methodology." <div class="source">— Nathan · 016</div></div>
+        </div>
+        <div class="action" style="color:#e05050"><strong>Action:</strong> Backlog Q3–Q4. Do not resource until higher-confidence bets are shipped and validated.</div>
+      </div>
+      <div class="bet-card" style="border-color:rgba(224,96,128,0.2)">
+        <div class="bet-num" style="color:#e06080">Bet 8 · REJECTED</div>
+        <h3>Done-For-You Tax Prep</h3>
+        <p>Initial hypothesis directly contradicted across 5+ interviews. Users want transparency and control — not outsourcing.</p>
+        <div class="quotes" style="margin-top:10px">
+          <div class="quote" style="font-size:12px;border-left-color:#e06080">"I want to file myself, but I need guidance." <div class="source">— Emma · 011</div></div>
+          <div class="quote" style="font-size:12px;border-left-color:#e06080">"I don't want to outsource; transparency helps me make decisions." <div class="source">— Leo · 020</div></div>
+        </div>
+        <div class="action" style="color:#e06080"><strong>Implication:</strong> Build transparency + optional expert input. Accountants are advisors, not replacements. Reinforced by IRS Direct File expansion.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 13: SUMMARY -->
+  <div class="slide slide-summary">
+    <div class="slide-header">
+      <div class="tier-badge tier1">Summary</div>
+      <h2>Bet Portfolio — <span>Recommended Priorities</span></h2>
+    </div>
+    <table class="sum-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Bet</th>
+          <th>Confidence</th>
+          <th>Status</th>
+          <th>Quarter</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>7</td><td class="bet-name">Solopreneurs ≠ Agencies</td>
+          <td><span class="pill" style="background:#0d3d0d;color:#5dde5d">Very High</span></td>
+          <td>Segment-specific UX</td><td style="color:#4fc3f7">Q2</td>
+        </tr>
+        <tr>
+          <td>2</td><td class="bet-name">Emotion &gt; Features</td>
+          <td><span class="pill" style="background:#0d3d0d;color:#5dde5d">High</span></td>
+          <td>Tone testing</td><td style="color:#4fc3f7">Q2</td>
+        </tr>
+        <tr>
+          <td>1</td><td class="bet-name">Consolidation Beats Best-of-Breed</td>
+          <td><span class="pill" style="background:#0d3d0d;color:#5dde5d">High</span></td>
+          <td>Track consolidation NPS</td><td style="color:#4fc3f7">Q2</td>
+        </tr>
+        <tr>
+          <td>5</td><td class="bet-name">Year-Round Tax Visibility</td>
+          <td><span class="pill" style="background:#0d3d0d;color:#5dde5d">High</span></td>
+          <td>Validate estimate accuracy</td><td style="color:#4fc3f7">Q2</td>
+        </tr>
+        <tr>
+          <td>6</td><td class="bet-name">Recurring Invoicing</td>
+          <td><span class="pill" style="background:#3d3300;color:#f0c040">Med-High</span></td>
+          <td>Launch &amp; survey</td><td style="color:#f0c040">Q2</td>
+        </tr>
+        <tr>
+          <td>4</td><td class="bet-name">Decision-Making Differentiator</td>
+          <td><span class="pill" style="background:#3d3300;color:#f0c040">Med-High</span></td>
+          <td>Hiring calc + pricing bench</td><td style="color:#f0c040">Q3</td>
+        </tr>
+        <tr>
+          <td>3</td><td class="bet-name">Accountants as Distribution</td>
+          <td><span class="pill" style="background:#3d2000;color:#e08030">Medium</span></td>
+          <td>Pilot program</td><td style="color:#e08030">Q3</td>
+        </tr>
+        <tr>
+          <td>9</td><td class="bet-name">Deduction Optimization</td>
+          <td><span class="pill" style="background:#3d0d0d;color:#e05050">Low</span></td>
+          <td>Backlog</td><td style="color:#8899aa">Q3–Q4</td>
+        </tr>
+        <tr>
+          <td>8</td><td class="bet-name">Done-For-You Tax Prep</td>
+          <td><span class="pill" style="background:#2d0d1a;color:#e06080">Rejected</span></td>
+          <td>Do not pursue</td><td style="color:#553344">—</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <button id="prevBtn" onclick="go(-1)" disabled>&#8592;</button>
+  <div class="dots" id="dots"></div>
+  <span class="counter" id="counter">1 / 13</span>
+  <button id="nextBtn" onclick="go(1)">&#8594;</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let cur = 0;
+
+  const dotsEl = document.getElementById('dots');
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot-ind' + (i === 0 ? ' on' : '');
+    d.onclick = () => goTo(i);
+    d.style.cursor = 'pointer';
+    dotsEl.appendChild(d);
+  }
+
+  function goTo(n) {
+    slides[cur].classList.remove('active');
+    dotsEl.children[cur].classList.remove('on');
+    cur = Math.max(0, Math.min(total - 1, n));
+    slides[cur].classList.add('active');
+    dotsEl.children[cur].classList.add('on');
+    document.getElementById('counter').textContent = (cur + 1) + ' / ' + total;
+    document.getElementById('prevBtn').disabled = cur === 0;
+    document.getElementById('nextBtn').disabled = cur === total - 1;
+  }
+
+  function go(dir) { goTo(cur + dir); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') go(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp') go(-1);
+  });
+</script>
+</body>
+</html>
