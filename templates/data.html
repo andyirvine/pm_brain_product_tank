@@ -1,43 +1,89 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="data-layout">
 
-<!-- ── Tab bar ─────────────────────────────────────────────────────────────── -->
-<div class="doc-tabs">
-  {% for key, doc in docs.items() %}
-  <a href="/data?tab={{ key }}"
-     class="doc-tab {{ 'active' if active_tab == key else '' }}">
-    <i class="bi bi-{{ doc.icon }}"></i>
-    {{ doc.title }}
-  </a>
-  {% endfor %}
-</div>
+  <!-- ── Doc nav sidebar ───────────────────────────────────────────────────── -->
+  <nav class="doc-nav">
+    {% for section in sections %}
+    <div class="doc-nav-section">
+      <div class="doc-nav-heading">
+        <i class="bi bi-{{ section.icon }}"></i>
+        {{ section.label }}
+      </div>
 
-<!-- ── Doc meta header ─────────────────────────────────────────────────────── -->
-<div class="page-header">
-  <div>
-    <div class="page-title">
-      <i class="bi bi-{{ doc_meta.icon }}" style="color:var(--primary);margin-right:8px;"></i>
-      {{ doc_meta.title }}
+      {% for key in section.docs %}
+      {% set doc = docs[key] %}
+      <a href="/data?tab={{ key }}"
+         class="doc-nav-item {{ 'active' if active_tab == key else '' }}">
+        <i class="bi bi-{{ doc.icon }}"></i>
+        <span>{{ doc.title }}</span>
+      </a>
+      {% endfor %}
+
+      {% if section.subsections is defined %}
+        {% for sub in section.subsections %}
+        <div class="doc-nav-subsection">
+          <button class="doc-nav-subsection-toggle"
+                  onclick="toggleSubsection(this)"
+                  aria-expanded="{{ 'true' if active_tab in sub.docs else 'false' }}">
+            <i class="bi bi-{{ sub.icon }}"></i>
+            {{ sub.label }}
+            <i class="bi bi-chevron-down toggle-chevron"></i>
+          </button>
+          <div class="doc-nav-subsection-items {{ '' if active_tab in sub.docs else 'collapsed' }}">
+            {% for key in sub.docs %}
+            {% set doc = docs[key] %}
+            <a href="/data?tab={{ key }}"
+               class="doc-nav-item doc-nav-item--indented {{ 'active' if active_tab == key else '' }}">
+              <i class="bi bi-{{ doc.icon }}"></i>
+              <span>{{ doc.title }}</span>
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      {% endif %}
     </div>
-    <div class="page-subtitle">{{ doc_meta.description }}</div>
-  </div>
-  <a href="/query" style="
-    font-size:12px; font-weight:500; color:var(--primary);
-    text-decoration:none; display:flex; align-items:center; gap:5px;">
-    <i class="bi bi-chat-dots-fill"></i> Ask about this document
-  </a>
-</div>
+    {% endfor %}
+  </nav>
 
-<!-- ── Markdown content ────────────────────────────────────────────────────── -->
-<div class="page-body">
-  <div class="card">
-    <div class="card-body" style="padding:32px 36px;">
-      <div class="markdown-body">
-        {{ content | safe }}
+  <!-- ── Document viewer ──────────────────────────────────────────────────── -->
+  <div class="doc-main">
+    <div class="page-header">
+      <div>
+        <div class="page-title">
+          <i class="bi bi-{{ doc_meta.icon }}" style="color:var(--primary);margin-right:8px;"></i>
+          {{ doc_meta.title }}
+        </div>
+        <div class="page-subtitle">{{ doc_meta.description }}</div>
+      </div>
+      <a href="/query" style="
+        font-size:12px; font-weight:500; color:var(--primary);
+        text-decoration:none; display:flex; align-items:center; gap:5px;">
+        <i class="bi bi-chat-dots-fill"></i> Ask about this document
+      </a>
+    </div>
+
+    <div class="page-body">
+      <div class="card">
+        <div class="card-body" style="padding:32px 36px;">
+          <div class="markdown-body">
+            {{ content | safe }}
+          </div>
+        </div>
       </div>
     </div>
   </div>
+
 </div>
 
+<script>
+function toggleSubsection(btn) {
+  const items = btn.nextElementSibling;
+  const expanded = btn.getAttribute('aria-expanded') === 'true';
+  btn.setAttribute('aria-expanded', !expanded);
+  items.classList.toggle('collapsed', expanded);
+}
+</script>
 {% endblock %}

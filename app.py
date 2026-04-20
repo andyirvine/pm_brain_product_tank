@@ -29,7 +29,25 @@ PRODUCT_AREAS = [
 
 # ── Document Registry ────────────────────────────────────────────────────────
 
+def _discover_interviews() -> dict:
+    """Dynamically discover all interview files in User Data/."""
+    user_data = BASE_DIR / "User Data"
+    if not user_data.exists():
+        return {}
+    docs = {}
+    for path in sorted(user_data.glob("interview-*.md")):
+        key = path.stem
+        title = path.stem.replace("-", " ").title()
+        docs[key] = {
+            "title": title,
+            "file": path,
+            "icon": "person-lines-fill",
+            "description": f"Customer interview: {title}",
+        }
+    return docs
+
 DOCS = {
+    # ── Company ──────────────────────────────────────────────────────────────
     "okrs": {
         "title": "Company OKRs",
         "file": BASE_DIR / "Company" / "company-okrs.md",
@@ -54,13 +72,132 @@ DOCS = {
         "icon": "graph-up-arrow",
         "description": "6 macro trends affecting Ledger's strategy",
     },
-    "jobs": {
-        "title": "Jobs to Be Done",
+    "job1": {
+        "title": "Job: Get Paid",
         "file": BASE_DIR / "Company" / "job-1-get-paid.md",
         "icon": "person-check-fill",
         "description": "Core job: Get Paid by My Clients",
     },
+    "job2": {
+        "title": "Job: File Taxes",
+        "file": BASE_DIR / "Company" / "job-2-file-taxes.md",
+        "icon": "receipt",
+        "description": "Core job: File My Taxes Without Stress",
+    },
+    "job3": {
+        "title": "Job: Cashflow Decisions",
+        "file": BASE_DIR / "Company" / "job-3-cashflow-decisions.md",
+        "icon": "cash-stack",
+        "description": "Core job: Make Smart Cashflow Decisions",
+    },
+    # ── PM Brain: Invoicing & Collections ────────────────────────────────────
+    "inv-signals": {
+        "title": "Signals Synthesis",
+        "file": BASE_DIR / "pm-brain" / "invoicing-collections" / "signals-synthesis.md",
+        "icon": "broadcast",
+        "description": "Customer signal synthesis — Invoicing & Collections",
+    },
+    "inv-okrs": {
+        "title": "Team OKRs",
+        "file": BASE_DIR / "pm-brain" / "invoicing-collections" / "team-okrs.md",
+        "icon": "bullseye",
+        "description": "Team objectives — Invoicing & Collections",
+    },
+    "inv-bets": {
+        "title": "Hypothesis & Evidence",
+        "file": BASE_DIR / "pm-brain" / "invoicing-collections" / "hypothesis-evidence.md",
+        "icon": "lightning-fill",
+        "description": "Strategic bets — Invoicing & Collections",
+    },
+    "inv-segments": {
+        "title": "Customer Segments",
+        "file": BASE_DIR / "pm-brain" / "invoicing-collections" / "customer-segments.md",
+        "icon": "people-fill",
+        "description": "Customer segments — Invoicing & Collections",
+    },
+    # ── PM Brain: Tax & Compliance ────────────────────────────────────────────
+    "tax-signals": {
+        "title": "Signals Synthesis",
+        "file": BASE_DIR / "pm-brain" / "tax-compliance" / "signals-synthesis.md",
+        "icon": "broadcast",
+        "description": "Customer signal synthesis — Tax & Compliance",
+    },
+    "tax-okrs": {
+        "title": "Team OKRs",
+        "file": BASE_DIR / "pm-brain" / "tax-compliance" / "team-okrs.md",
+        "icon": "bullseye",
+        "description": "Team objectives — Tax & Compliance",
+    },
+    "tax-bets": {
+        "title": "Hypothesis & Evidence",
+        "file": BASE_DIR / "pm-brain" / "tax-compliance" / "hypothesis-evidence.md",
+        "icon": "lightning-fill",
+        "description": "Strategic bets — Tax & Compliance",
+    },
+    "tax-segments": {
+        "title": "Customer Segments",
+        "file": BASE_DIR / "pm-brain" / "tax-compliance" / "customer-segments.md",
+        "icon": "people-fill",
+        "description": "Customer segments — Tax & Compliance",
+    },
+    # ── User Research ─────────────────────────────────────────────────────────
+    "interview-index": {
+        "title": "Interview Index",
+        "file": BASE_DIR / "User Data" / "00_INTERVIEW_INDEX.md",
+        "icon": "card-list",
+        "description": "Index of all customer interviews",
+    },
+    "interview-log": {
+        "title": "Interview Log",
+        "file": BASE_DIR / "User Data" / "interview-log.md",
+        "icon": "journal-text",
+        "description": "Complete log of all interview sessions",
+    },
+    "interviews-summary": {
+        "title": "Interviews Summary",
+        "file": BASE_DIR / "User Data" / "INTERVIEWS_SUMMARY.md",
+        "icon": "file-earmark-text-fill",
+        "description": "Key findings synthesised across all interviews",
+    },
+    "signals": {
+        "title": "Signals Synthesis",
+        "file": BASE_DIR / "User Data" / "signals-synthesis.md",
+        "icon": "broadcast",
+        "description": "Cross-interview signal synthesis",
+    },
+    **_discover_interviews(),
 }
+
+# Navigation sections — controls grouping in the data page sidebar
+DOC_SECTIONS = [
+    {
+        "label": "Company",
+        "icon": "building",
+        "docs": ["okrs", "bets", "competitive", "market", "job1", "job2", "job3"],
+    },
+    {
+        "label": "PM Brain: Invoicing",
+        "icon": "receipt-cutoff",
+        "docs": ["inv-signals", "inv-okrs", "inv-bets", "inv-segments"],
+    },
+    {
+        "label": "PM Brain: Tax",
+        "icon": "calculator",
+        "docs": ["tax-signals", "tax-okrs", "tax-bets", "tax-segments"],
+    },
+    {
+        "label": "User Research",
+        "icon": "people",
+        "docs": ["interview-index", "interview-log", "interviews-summary", "signals"],
+        "subsections": [
+            {
+                "label": "Customer Interviews",
+                "icon": "person-lines-fill",
+                "docs": [k for k in _discover_interviews()],
+            }
+        ],
+    },
+]
 
 # ── Dashboard Parsers ─────────────────────────────────────────────────────────
 # All dashboard data is derived live from the markdown files.
@@ -291,6 +428,25 @@ def build_context() -> str:
     return "\n\n---\n\n".join(parts)
 
 
+def _build_sections_for_template() -> list:
+    """Return DOC_SECTIONS with only keys that exist on disk."""
+    result = []
+    for section in DOC_SECTIONS:
+        valid_keys = [k for k in section["docs"] if k in DOCS and DOCS[k]["file"].exists()]
+        if not valid_keys:
+            continue
+        entry = {**section, "docs": valid_keys}
+        if "subsections" in section:
+            subs = []
+            for sub in section["subsections"]:
+                sub_keys = [k for k in sub["docs"] if k in DOCS and DOCS[k]["file"].exists()]
+                if sub_keys:
+                    subs.append({**sub, "docs": sub_keys})
+            entry["subsections"] = subs
+        result.append(entry)
+    return result
+
+
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.route("/")
@@ -308,6 +464,7 @@ def data():
     return render_template(
         "data.html",
         docs=DOCS,
+        sections=_build_sections_for_template(),
         active_tab=active,
         content=content_html,
         doc_meta=doc,
